@@ -52,11 +52,28 @@ public class AppointmentController {
 
     @PostMapping("/appointment")
     public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment){
-        /** TODO 
-         * Implement this function, which acts as the POST /api/appointment endpoint.
-         * Make sure to check out the whole project. Specially the Appointment.java class
-         */
-        return new ResponseEntity<>(HttpStatus.I_AM_A_TEAPOT);
+        try{
+            if (appointment.getStartsAt().isAfter(appointment.getFinishesAt())) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Appointment> appointments = appointmentRepository.findAll();
+            for (Appointment existingAppointment : appointments) {
+                if (existingAppointment.getRoom().equals(appointment.getRoom()) &&
+                        ((appointment.getStartsAt().isAfter(existingAppointment.getStartsAt()) &&
+                                appointment.getStartsAt().isBefore(existingAppointment.getFinishesAt())) ||
+                                (appointment.getFinishesAt().isAfter(existingAppointment.getStartsAt()) &&
+                                        appointment.getFinishesAt().isBefore(existingAppointment.getFinishesAt())))) {
+                    return new ResponseEntity<>(HttpStatus.CONFLICT);
+                }
+            }
+
+            appointmentRepository.save(appointment);
+
+            return new ResponseEntity<>(HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 
